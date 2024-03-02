@@ -64,40 +64,45 @@ const images = [
 	},
 ]
 
-const gallery = document.querySelector('.gallery')
-const allPictures = document.createDocumentFragment()
+const galleryList = document.querySelector('ul.gallery')
+const galleryMarkup = images.map(
+	image => `<li class="gallery-item">
+  <a class="gallery-link" href="${image.original}">
+    <img
+      class="gallery-image"
+      src="${image.preview}"
+      data-source="${image.original}"
+      alt="${image.description}"
+    />
+  </a>
+</li>`
+)
 
-const blockOfgalery = image => {
-	const tagLi = document.createElement('li')
-	tagLi.classList.add('gallery-item')
-	const tagA = document.createElement('a')
-	tagA.classList.add('gallery-link')
-	tagA.setAttribute('href', image.preview)
-	const tagImg = document.createElement('img')
-	tagImg.classList.add('gallery-image')
-	tagImg.setAttribute('src', image.original)
-	tagImg.setAttribute('data-source', image.preview)
-	tagImg.setAttribute('alt', image.description)
-	tagA.append(tagImg)
-	tagLi.appendChild(tagA)
-	return tagLi
-}
+galleryList.innerHTML = galleryMarkup.join('')
 
-for (const image of images) {
-	const galleryItem = blockOfgalery(image)
-	allPictures.appendChild(galleryItem)
-}
+galleryList.addEventListener('click', onImageClick)
 
-gallery.appendChild(allPictures)
-
-gallery.addEventListener('click', event => {
+function onImageClick(event) {
 	event.preventDefault()
-	if (event.target.classList.contains('gallery-image')) {
-		const bigImg = event.target.getAttribute('src')
-		console.log(bigImg)
-		const instance = basicLightbox.create(`
-    <img src="${bigImg}">
-`)
-		instance.show()
+
+	if (event.target.nodeName !== 'IMG') {
+		return
 	}
-})
+
+	const modalMarkup = `<img width="100%" height="100%" src="${event.target.dataset.source}" alt="${event.target.alt}">`
+
+	const instance = basicLightbox.create(modalMarkup, {
+		onShow: instance => galleryList.addEventListener('keydown', instanceClose),
+		onClose: instance =>
+			galleryList.removeEventListener('keydown', instanceClose),
+	})
+
+	function instanceClose(event) {
+		if (event.code === 'Escape') {
+			instance.close()
+		}
+		galleryList.removeEventListener('keydown', instanceClose)
+	}
+
+	instance.show()
+}
